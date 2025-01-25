@@ -68,3 +68,16 @@ exports.login = (req, res) => {
         }
     );
 };
+
+// Fetch all users
+exports.fetchAllUsers = (req, res) => {
+    db.query("SELECT id, name, email FROM Users", (err, results) => {
+        if (err) {
+            return res.status(500).json({ message: "Database error", error: err });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: "No users found" });
+        }
+        res.status(200).json({ users: results });
+    });
+};
