@@ -5,9 +5,9 @@ require('dotenv').config();
 
 // Register user
 exports.register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, age, phone } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !age) {
         return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -17,8 +17,8 @@ exports.register = async (req, res) => {
 
         // Insert user into the database
         db.query(
-            "INSERT INTO Users (name, email, password) VALUES (?, ?, ?)",
-            [name, email, hashedPassword],
+            "INSERT INTO Users (name, email, password, age, phone) VALUES (?, ?, ?, ?, ?)",
+            [name, email, hashedPassword, age, phone],
             (err) => {
                 if (err) {
                     if (err.code === 'ER_DUP_ENTRY') {
@@ -71,7 +71,7 @@ exports.login = (req, res) => {
 
 // Fetch all users
 exports.fetchAllUsers = (req, res) => {
-    db.query("SELECT id, name, email FROM Users", (err, results) => {
+    db.query("SELECT id, name, email, age, phone FROM Users", (err, results) => {
         if (err) {
             return res.status(500).json({ message: "Database error", error: err });
         }
