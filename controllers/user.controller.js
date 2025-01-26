@@ -64,7 +64,8 @@ const login= async(req, res)=>{
 
 const fetchAllUsers = (req, res) => {
     try {
-        db.query("SELECT id, name, email, age, phone FROM Users", (err, results) => {
+        const sql= 'SELECT id, name, email, age, phone FROM Users';
+        db.query(sql, (err, results) => {
             if (err) {
                 return res.status(500).json({ message: "Database error", error: err });
             }
