@@ -3,74 +3,66 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Register user
-exports.register = async (req, res) => {
-    const { name, email, password, age, phone } = req.body;
-
-    if (!name || !email || !password || !age) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-
+const register = async (req, res) => {
     try {
-        // Hash the password
+        const { name, email, password, age, phone } = req.body;
+
+         if (!name || !email || !password || !age) {
+                return res.status(400).json({ message: "All fields are required" });
+            }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert user into the database
-        db.query(
-            "INSERT INTO Users (name, email, password, age, phone) VALUES (?, ?, ?, ?, ?)",
-            [name, email, hashedPassword, age, phone],
-            (err) => {
-                if (err) {
-                    if (err.code === 'ER_DUP_ENTRY') {
-                        return res.status(400).json({ message: "Email already exists" });
-                    }
-                    return res.status(500).json({ message: "Database error", error: err });
+        // Insert user into database
+        const sql = 'INSERT INTO Users (name, email, password, age, phone) VALUES (?, ?, ?, ?, ?)';
+        db.query(sql, [name, email, hashedPassword, age, phone], (err, result) => {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(400).json({ message: 'Email already exists.' });
                 }
-                res.status(201).json({ message: "User registered successfully" });
+                return res.status(500).json({ message: 'Database error.', error: err });
             }
-        );
+            res.status(201).json({ message: 'User registered successfully.'});
+        });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({message: 'Internal server error'});
     }
 };
 
-// Login user
-exports.login = (req, res) => {
-    const { email, password } = req.body;
+const login= async(req, res)=>{
+    try {
+        const {email, password}= req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Fetch user from the database
-    db.query(
-        "SELECT * FROM Users WHERE email = ?",
-        [email],
-        async (err, results) => {
-            if (err) return res.status(500).json({ message: "Database error", error: err });
-
-            if (results.length === 0) {
-                return res.status(404).json({ message: "User not found" });
-            }
-
-            const user = results[0];
-
-            // Compare passwords
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return res.status(401).json({ message: "Invalid credentials" });
-            }
-
-            // Generate JWT token
-            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-            res.json({ message: "Login successful", token });
+        if(!email || !password){
+            return res.status(400).json({message: 'Email and password are required'});
         }
-    );
-};
 
-// Fetch all users
-exports.fetchAllUsers = (req, res) => {
+        const sql= 'SELECT * FROM Users WHERE email = ?';
+        db.query(sql, [email], async(err, results)=>{
+            if(err){
+                return res.status(500).json({message: 'Database error'});
+            }
+            if(results.length==0){
+                return res.status(404).json({message: 'user not found'});
+            }
+
+            const user= results[0];
+
+            const isMatch= await bcrypt.compare(password, user.password);
+            if(!isMatch){
+                return res.status(401).json({message: 'Invalid credentials'});
+            }
+
+            const token= jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '1h'});
+            res.status(200).json({message: 'User logged in successful', token});
+        });
+        
+    } catch (error) {
+        res.status(500).json({message: 'Internal server error'});
+    }
+}
+
+const fetchAllUsers = (req, res) => {
     db.query("SELECT id, name, email, age, phone FROM Users", (err, results) => {
         if (err) {
             return res.status(500).json({ message: "Database error", error: err });
@@ -81,3 +73,6 @@ exports.fetchAllUsers = (req, res) => {
         res.status(200).json({ users: results });
     });
 };
+
+
+module.exports= {register, login, fetchAllUsers};
